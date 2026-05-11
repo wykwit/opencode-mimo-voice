@@ -1,35 +1,28 @@
-// opencode-voice: Speech-to-text and text-to-speech for OpenCode.
+// opencode-mimo-voice: Text-to-speech for OpenCode via MiMo TTS.
 //
-// STT: Record voice via sox, transcribe with whisper-cpp, normalize with
-//      an OpenAI-compatible LLM, append to the TUI prompt.
-//
-// TTS: Auto-speak assistant responses (or read on demand) via Piper,
+// TTS: Auto-speak assistant responses (or read on demand) via MiMo TTS API,
 //      with LLM normalization for natural speech.
 //
 // Prerequisites:
-//   STT: brew install whisper-cpp sox
-//   TTS: Piper binary at ~/.local/bin/piper, voice models at ~/.local/share/piper-voices/
+//   TTS: MIMO_API_KEY environment variable, sox for playback
 //
 // Configuration via tui.json plugin options:
-//   ["opencode-voice", { "endpoint": "...", "model": "...", "apiKeyEnv": "..." }]
+//   ["opencode-mimo-voice", { "endpoint": "...", "model": "...", "apiKeyEnv": "..." }]
 //
-// Runtime state (model, mic, voice, tts mode) persisted via api.kv.
+// Runtime state (voice, tts mode) persisted via api.kv.
 //
 // Commands:
-//   /stt-record (ctrl+r) - start/stop recording + transcribe
-//   /stt-stop            - cancel recording
-//   /stt-model           - select whisper model
-//   /stt-mic             - select microphone
-//   /tts-speak (leader+s)- read last response aloud
-//   /tts-mode (leader+v) - toggle auto TTS on/off
-//   /tts-stop (escape)   - stop playback
-//   /tts-voice           - select TTS voice
+//   /tts-speak (leader+s) - read last response aloud
+//   /tts-auto (leader+v)  - toggle auto TTS on/off
+//   /tts-stop (escape)    - stop playback
+//   /tts-normalize        - toggle TTS normalization
+//   /tts-voice            - select TTS voice
 
 import fs from "node:fs";
 import os from "node:os";
-import { registerSTT } from "./lib/stt.js";
 import { registerTTS } from "./lib/tts.js";
 import { createClient } from "./lib/llm-client.js";
+import { registerTTSSidebar } from "./lib/tts-sidebar.tsx";
 
 function loadPromptFile(filePath) {
   if (!filePath) return null;
@@ -42,20 +35,19 @@ function loadPromptFile(filePath) {
 }
 
 export default {
-  id: "opencode-voice",
+  id: "opencode-mimo-voice",
   tui: async (api, options) => {
     const { kv } = api;
-    const { complete } = createClient(kv, options);
+    const { complete, synthesize } = createClient(kv, options);
 
     const prompts = {
-      stt: loadPromptFile(options?.sttPrompt),
       ttsAuto: loadPromptFile(options?.ttsAutoPrompt),
       ttsManual: loadPromptFile(options?.ttsManualPrompt),
     };
 
-    const sttCommands = registerSTT(api, kv, complete, prompts);
-    const ttsCommands = registerTTS(api, kv, complete, prompts);
+    const ttsCommands = registerTTS(api, kv, complete, synthesize, prompts, options);
+    registerTTSSidebar(api, options);
 
-    api.command.register(() => [...sttCommands, ...ttsCommands]);
+    api.command.register(() => ttsCommands);
   },
 };

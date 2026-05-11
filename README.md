@@ -1,16 +1,8 @@
-[![CI](https://github.com/renjfk/opencode-voice/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/renjfk/opencode-voice/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![npm](https://img.shields.io/npm/v/@renjfk/opencode-voice)](https://www.npmjs.com/package/@renjfk/opencode-voice)
-[![Downloads](https://img.shields.io/npm/dm/@renjfk/opencode-voice)](https://www.npmjs.com/package/@renjfk/opencode-voice)
+# opencode-mimo-voice
 
-# opencode-voice
+> **This is a fork of [opencode-voice](https://github.com/renjfk/opencode-voice) by Soner Koksal.** This fork uses MiMo TTS exclusively and does not support other TTS options.
 
-Speech-to-text and text-to-speech plugin for [OpenCode](https://opencode.ai/).
-
-Record voice prompts with local whisper transcription, hear assistant responses
-spoken aloud via Piper TTS. Both directions use an LLM to normalize text for
-natural speech (fixing homophones, splitting camelCase identifiers, summarizing
-code-heavy responses, etc.).
+Text-to-speech plugin for [OpenCode](https://opencode.ai/) using MiMo TTS. Hear assistant responses spoken aloud via MiMo, with LLM normalization for natural speech.
 
 ## Install
 
@@ -19,59 +11,54 @@ Add to your `tui.json` (create at `~/.config/opencode/tui.json` if it doesn't ex
 ```json
 {
   "$schema": "https://opencode.ai/tui.json",
-  "plugin": ["@renjfk/opencode-voice"]
+  "plugin": ["opencode-mimo-voice"]
+}
+```
+
+If running from a local clone (development), use the absolute path instead:
+
+```json
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": ["/path/to/opencode-mimo-voice"]
 }
 ```
 
 ## Prerequisites
 
-### Speech-to-text
+Create a MiMo API key in the Xiaomi MiMo API console and export it in your shell:
 
 ```bash
-brew install whisper-cpp sox
+export MIMO_API_KEY="your-api-key"
 ```
 
-Download a whisper model to `~/.local/share/whisper-cpp/`:
+TTS playback uses `play` from sox (install via `brew install sox`).
 
-```bash
-mkdir -p ~/.local/share/whisper-cpp
-curl -L -o ~/.local/share/whisper-cpp/ggml-large-v3-turbo-q5_0.bin \
-  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin
+Optional MiMo TTS defaults can be set in `tui.json`:
+
+```json
+{
+  "plugin": [
+    [
+      "opencode-mimo-voice",
+      {
+        "mimoApiKeyEnv": "MIMO_API_KEY",
+        "mimoEndpoint": "https://api.xiaomimimo.com/v1",
+        "mimoTTSModel": "mimo-v2.5-tts"
+      }
+    ]
+  ]
+}
 ```
 
-### Text-to-speech
-
-Install [Piper](https://github.com/rhasspy/piper):
-
-```bash
-uv tool install piper-tts
-```
-
-Or with pip:
-
-```bash
-pip install piper-tts
-```
-
-Download a voice model to `~/.local/share/piper-voices/`:
-
-```bash
-mkdir -p ~/.local/share/piper-voices
-curl -L -o ~/.local/share/piper-voices/en_US-ryan-high.onnx \
-  https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx
-curl -L -o ~/.local/share/piper-voices/en_US-ryan-high.onnx.json \
-  https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx.json
-```
+The `/tts-voice` command stores the selected MiMo voice in OpenCode's `api.kv`.
 
 ### LLM endpoint
 
-An OpenAI-compatible LLM endpoint is required for text normalization. For
-speech-to-text it cleans up whisper output (punctuation, filler words, software
-engineering homophones). For text-to-speech it converts markdown into natural
-spoken text.
+An OpenAI-compatible LLM endpoint is required for text normalization. It converts markdown into natural spoken text.
 
-By default uses Anthropic's OpenAI compatibility layer with `claude-haiku-4-5`.
-Requires `ANTHROPIC_API_KEY` in your environment.
+By default uses Xiaomi MiMo's OpenAI-compatible API with `mimo-v2.5`.
+Requires `MIMO_API_KEY` in your environment.
 
 Set defaults in `tui.json` via plugin options:
 
@@ -79,33 +66,37 @@ Set defaults in `tui.json` via plugin options:
 {
   "plugin": [
     [
-      "@renjfk/opencode-voice",
+      "opencode-mimo-voice",
       {
-        "endpoint": "https://api.anthropic.com/v1",
-        "model": "claude-haiku-4-5",
-        "apiKeyEnv": "ANTHROPIC_API_KEY",
-        "maxTokens": 2048
+        "endpoint": "https://api.xiaomimimo.com/v1",
+        "model": "mimo-v2.5",
+        "apiKeyEnv": "MIMO_API_KEY",
+        "authHeader": "api-key",
+        "maxTokensParam": "max_completion_tokens",
+        "maxTokens": 2048,
+        "ttsNormalize": true
       }
     ]
   ]
 }
 ```
 
-Any OpenAI-compatible endpoint works (Ollama, vLLM, LM Studio, etc.).
+Any OpenAI-compatible endpoint works (Anthropic's OpenAI compatibility layer,
+OpenAI, Ollama, vLLM, LM Studio, etc.). For bearer-token endpoints, set
+`authHeader` to `authorization` and `maxTokensParam` to the token field expected
+by that endpoint, usually `max_tokens`.
 
 ### Custom prompts
 
 The LLM system prompts used for normalization can be fully replaced by pointing
-to your own prompt files. This lets you fine-tune how transcriptions are cleaned
-up or how responses are spoken.
+to your own prompt files. This lets you fine-tune how responses are spoken.
 
 ```json
 {
   "plugin": [
     [
-      "@renjfk/opencode-voice",
+      "opencode-mimo-voice",
       {
-        "sttPrompt": "~/.config/opencode/stt-prompt.md",
         "ttsAutoPrompt": "~/.config/opencode/tts-auto-prompt.md",
         "ttsManualPrompt": "~/.config/opencode/tts-manual-prompt.md"
       }
@@ -114,57 +105,46 @@ up or how responses are spoken.
 }
 ```
 
-- `sttPrompt` - system prompt for cleaning up whisper transcriptions
 - `ttsAutoPrompt` - system prompt for auto-speaking assistant responses
 - `ttsManualPrompt` - system prompt for manually reading responses aloud
 
 If a path is not set, the built-in default prompt is used.
 
+Set `ttsNormalize` to `false` to skip TTS speech normalization by default. The
+`/tts-normalize` command can toggle it at runtime.
+
 ## Commands
-
-### Speech-to-text
-
-| Command       | Keybind  | Description                       |
-| ------------- | -------- | --------------------------------- |
-| `/stt-record` | `ctrl+r` | Start/stop recording + transcribe |
-| `/stt-stop`   |          | Cancel recording                  |
-| `/stt-model`  |          | Select whisper model              |
-| `/stt-mic`    |          | Select microphone                 |
 
 ### Text-to-speech
 
 The `leader` key in OpenCode is `ctrl+x`. So `leader+s` means press `ctrl+x`
 then `s`.
 
-| Command      | Keybind    | Description              |
-| ------------ | ---------- | ------------------------ |
-| `/tts-speak` | `leader+s` | Read last response aloud |
-| `/tts-mode`  | `leader+v` | Toggle auto TTS on/off   |
-| `/tts-stop`  | `escape`   | Stop playback            |
-| `/tts-voice` |            | Select TTS voice         |
+The sidebar shows the current TTS phase. Click the TTS header to expand or
+collapse status details, auto mode, and normalization settings.
+
+| Command          | Keybind    | Description              |
+| ---------------- | ---------- | ------------------------ |
+| `/tts-speak`     | `leader+s` | Read last response aloud |
+| `/tts-auto`      | `leader+v` | Toggle auto TTS on/off   |
+| `/tts-stop`      | `escape`   | Stop playback            |
+| `/tts-normalize` |            | Toggle TTS normalization |
+| `/tts-voice`     |            | Select TTS voice         |
 
 ## How it works
 
-### STT pipeline
-
-1. `sox` records audio from your microphone
-2. `whisper-cli` transcribes locally using a ggml model
-3. LLM normalizes the transcription: fixes punctuation, removes filler words,
-   corrects software engineering homophones ("Jason" to "JSON", "bullion" to
-   "boolean", etc.)
-4. Cleaned text is appended to the OpenCode prompt
-
 ### TTS pipeline
 
-1. When the assistant finishes responding (or on manual trigger), the response
-   text is sent to the LLM for speech normalization
+1. When TTS normalization is enabled, the response text is sent to the LLM for
+   speech normalization
 2. The LLM decides how to handle it: narrate simple answers, summarize
    code-heavy responses, or briefly notify for confirmations
-3. Piper synthesizes speech locally, piped through sox for playback
+3. When TTS normalization is disabled, the raw response text is spoken directly
+4. MiMo synthesizes WAV audio, piped through sox for playback
 
 ### Auto TTS
 
-When enabled (`/tts-mode`), the plugin automatically speaks:
+When enabled (`/tts-auto`), the plugin automatically speaks:
 
 - Assistant responses when a session goes idle after work
 - Permission requests
@@ -172,7 +152,7 @@ When enabled (`/tts-mode`), the plugin automatically speaks:
 
 ## Contributing
 
-opencode-voice is open to contributions and ideas!
+opencode-mimo-voice is open to contributions and ideas!
 
 ### Issue conventions
 
@@ -188,10 +168,10 @@ opencode-voice is open to contributions and ideas!
 ### Development
 
 ```bash
-npm run check        # lint + fmt
-npm run lint         # oxlint
-npm run fmt          # oxfmt --check
-npm run fmt:fix      # oxfmt --write
+bun run check        # lint + fmt
+bun run lint         # oxlint
+bun run fmt          # oxfmt --check
+bun run fmt:fix      # oxfmt --write
 ```
 
 ### Release process
