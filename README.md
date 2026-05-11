@@ -86,6 +86,13 @@ OpenAI, Ollama, vLLM, LM Studio, etc.). For bearer-token endpoints, set
 `authHeader` to `authorization` and `maxTokensParam` to the token field expected
 by that endpoint, usually `max_tokens`.
 
+- `endpoint` - OpenAI-compatible base URL
+- `model` - model name sent to `/chat/completions`
+- `apiKeyEnv` - environment variable containing the API key
+- `maxTokens` - maximum completion tokens for normalization calls
+- `reasoningEffort` - optional reasoning level for models that support it
+- `retries` - number of retry attempts for transient LLM failures
+
 ### Custom prompts
 
 The LLM system prompts used for normalization can be fully replaced by pointing
@@ -172,6 +179,18 @@ bun run check        # lint + fmt
 bun run lint         # oxlint
 bun run fmt          # oxfmt --check
 bun run fmt:fix      # oxfmt --write
+```
+
+### Test local plugin in OpenCode
+
+To test unpublished changes in the OpenCode TUI, point `~/.config/opencode/tui.json`
+at the local repo path, not the npm package name:
+
+```json
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": ["/Users/your-user/opencode-voice"]
+}
 ```
 
 ### Release process
