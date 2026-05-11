@@ -60,7 +60,7 @@ separate from the assistant text being spoken.
 
 An OpenAI-compatible LLM endpoint is required for text summarization. It converts markdown into natural spoken text.
 
-By default uses Xiaomi MiMo's OpenAI-compatible API with `mimo-v2.5`.
+By default uses Xiaomi MiMo's OpenAI-compatible API with `mimo-v2-flash`.
 Requires `MIMO_API_KEY` in your environment.
 
 Set defaults in `tui.json` via plugin options:
@@ -72,7 +72,7 @@ Set defaults in `tui.json` via plugin options:
       "opencode-mimo-voice",
       {
         "endpoint": "https://api.xiaomimimo.com/v1",
-        "model": "mimo-v2.5",
+        "model": "mimo-v2-flash",
         "apiKeyEnv": "MIMO_API_KEY",
         "authHeader": "api-key",
         "maxTokensParam": "max_completion_tokens",
