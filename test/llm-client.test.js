@@ -62,7 +62,6 @@ test("sends chat completions requests with reasoning_effort when configured", as
       apiKeyEnv: "TEST_LLM_API_KEY",
       maxTokens: 321,
       reasoningEffort: "low",
-      retries: 0,
     });
 
     const result = await client.complete({
@@ -93,41 +92,76 @@ test("sends chat completions requests with reasoning_effort when configured", as
   }
 });
 
-test("retries transient failures and eventually returns the response text", async () => {
+test("returns transient API failures without retrying", async () => {
   const previousKey = process.env.TEST_LLM_API_KEY;
   const previousFetch = globalThis.fetch;
-  const previousSetTimeout = globalThis.setTimeout;
   let attempts = 0;
   process.env.TEST_LLM_API_KEY = "secret";
 
   globalThis.fetch = async () => {
     attempts += 1;
-    if (attempts < 3) {
-      return createJsonResponse(429, { error: { message: "rate limited" } });
-    }
-    return createJsonResponse(200, {
-      choices: [{ message: { content: "recovered text" } }],
-    });
-  };
-
-  globalThis.setTimeout = (fn) => {
-    fn();
-    return 0;
+    return createJsonResponse(429, { error: { message: "rate limited" } });
   };
 
   try {
     const client = createClient(createKv(), {
       apiKeyEnv: "TEST_LLM_API_KEY",
-      retries: 2,
     });
 
-    const result = await client.complete({ prompt: "Retry this" });
+    const result = await client.complete({ prompt: "Fail fast" });
 
-    assert.deepEqual(result, { text: "recovered text" });
-    assert.equal(attempts, 3);
+    assert.equal(result.text, null);
+    assert.equal(result.error, "API request failed (429)");
+    assert.equal(attempts, 1);
   } finally {
     globalThis.fetch = previousFetch;
-    globalThis.setTimeout = previousSetTimeout;
+    if (previousKey === undefined) {
+      delete process.env.TEST_LLM_API_KEY;
+    } else {
+      process.env.TEST_LLM_API_KEY = previousKey;
+    }
+  }
+});
+
+test("sends minimal TTS messages with style and text", async () => {
+  const previousKey = process.env.TEST_LLM_API_KEY;
+  const previousFetch = globalThis.fetch;
+  const requests = [];
+  process.env.TEST_LLM_API_KEY = "secret";
+
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, options });
+    return createJsonResponse(200, {
+      choices: [{ message: { audio: { data: "audio-base64" } } }],
+    });
+  };
+
+  try {
+    const client = createClient(createKv(), {
+      mimoEndpoint: "https://example.test/v1/",
+      mimoTTSModel: "tts-test",
+      mimoApiKeyEnv: "TEST_LLM_API_KEY",
+    });
+
+    const result = await client.synthesize({
+      text: "Done.",
+      style: "Fast and cheerful.",
+      voice: "Chloe",
+    });
+
+    assert.equal(result.audioData, "audio-base64");
+    assert.equal(result.error, undefined);
+    assert.equal(requests.length, 1);
+    assert.deepEqual(JSON.parse(requests[0].options.body), {
+      model: "tts-test",
+      messages: [
+        { role: "user", content: "Fast and cheerful." },
+        { role: "assistant", content: "Done." },
+      ],
+      audio: { format: "wav", voice: "Chloe" },
+    });
+  } finally {
+    globalThis.fetch = previousFetch;
     if (previousKey === undefined) {
       delete process.env.TEST_LLM_API_KEY;
     } else {

@@ -44,7 +44,8 @@ Optional MiMo TTS defaults can be set in `tui.json`:
       {
         "mimoApiKeyEnv": "MIMO_API_KEY",
         "mimoEndpoint": "https://api.xiaomimimo.com/v1",
-        "mimoTTSModel": "mimo-v2.5-tts"
+        "mimoTTSModel": "mimo-v2.5-tts",
+        "ttsStyle": "Very fast tempo; tight spacing; crisp rapid-fire delivery; no breathy pauses."
       }
     ]
   ]
@@ -52,6 +53,8 @@ Optional MiMo TTS defaults can be set in `tui.json`:
 ```
 
 The `/tts-voice` command stores the selected MiMo voice in OpenCode's `api.kv`.
+The `ttsStyle` option is sent to MiMo as a natural-language TTS instruction,
+separate from the assistant text being spoken.
 
 ### LLM endpoint
 
@@ -91,7 +94,6 @@ by that endpoint, usually `max_tokens`.
 - `apiKeyEnv` - environment variable containing the API key
 - `maxTokens` - maximum completion tokens for summarization calls
 - `reasoningEffort` - optional reasoning level for models that support it
-- `retries` - number of retry attempts for transient LLM failures
 
 ### Custom prompts
 
