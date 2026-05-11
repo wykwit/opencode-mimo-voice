@@ -11,7 +11,7 @@ function statusColor(theme, phase) {
 }
 
 function statusLabel(phase) {
-  if (phase === "normalizing") return "Normalizing";
+  if (phase === "normalizing") return "Summarizing";
   if (phase === "processing") return "Processing";
   if (phase === "playing") return "Playing";
   if (phase === "error") return "Error";
@@ -29,9 +29,9 @@ function TTSStatusView(props) {
     status();
     return props.api.kv.get("tts.mode", "off");
   });
-  const normalize = createMemo(() => {
+  const summarize = createMemo(() => {
     status();
-    return props.api.kv.get("tts.normalize") ?? props.options?.ttsNormalize ?? true;
+    return props.api.kv.get("tts.summarization") ?? props.options?.ttsSummarization ?? true;
   });
 
   function toggleDetails() {
@@ -56,7 +56,7 @@ function TTSStatusView(props) {
           {status().detail}
         </text>
         <text fg={theme().textMuted}>Mode: {mode() === "on" ? "auto" : "manual"}</text>
-        <text fg={theme().textMuted}>Normalize: {normalize() ? "on" : "off"}</text>
+        <text fg={theme().textMuted}>Summarize: {summarize() ? "on" : "off"}</text>
       </Show>
     </box>
   );

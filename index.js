@@ -1,7 +1,7 @@
 // opencode-mimo-voice: Text-to-speech for OpenCode via MiMo TTS.
 //
 // TTS: Auto-speak assistant responses (or read on demand) via MiMo TTS API,
-//      with LLM normalization for natural speech.
+//      with LLM summarization for natural speech.
 //
 // Prerequisites:
 //   TTS: MIMO_API_KEY environment variable, sox for playback
@@ -15,7 +15,7 @@
 //   /tts-speak (leader+s) - read last response aloud
 //   /tts-auto (leader+v)  - toggle auto TTS on/off
 //   /tts-stop (escape)    - stop playback
-//   /tts-normalize        - toggle TTS normalization
+//   /tts-summarization    - toggle TTS summarization
 //   /tts-voice            - select TTS voice
 
 import fs from "node:fs";

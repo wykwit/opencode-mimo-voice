@@ -2,7 +2,7 @@
 
 > **This is a fork of [opencode-voice](https://github.com/renjfk/opencode-voice) by Soner Koksal.** This fork uses MiMo TTS exclusively and does not support other TTS options.
 
-Text-to-speech plugin for [OpenCode](https://opencode.ai/) using MiMo TTS. Hear assistant responses spoken aloud via MiMo, with LLM normalization for natural speech.
+Text-to-speech plugin for [OpenCode](https://opencode.ai/) using MiMo TTS. Hear assistant responses spoken aloud via MiMo, with LLM summarization for natural speech.
 
 ## Install
 
@@ -55,7 +55,7 @@ The `/tts-voice` command stores the selected MiMo voice in OpenCode's `api.kv`.
 
 ### LLM endpoint
 
-An OpenAI-compatible LLM endpoint is required for text normalization. It converts markdown into natural spoken text.
+An OpenAI-compatible LLM endpoint is required for text summarization. It converts markdown into natural spoken text.
 
 By default uses Xiaomi MiMo's OpenAI-compatible API with `mimo-v2.5`.
 Requires `MIMO_API_KEY` in your environment.
@@ -74,7 +74,7 @@ Set defaults in `tui.json` via plugin options:
         "authHeader": "api-key",
         "maxTokensParam": "max_completion_tokens",
         "maxTokens": 2048,
-        "ttsNormalize": true
+        "ttsSummarization": true
       }
     ]
   ]
@@ -89,13 +89,13 @@ by that endpoint, usually `max_tokens`.
 - `endpoint` - OpenAI-compatible base URL
 - `model` - model name sent to `/chat/completions`
 - `apiKeyEnv` - environment variable containing the API key
-- `maxTokens` - maximum completion tokens for normalization calls
+- `maxTokens` - maximum completion tokens for summarization calls
 - `reasoningEffort` - optional reasoning level for models that support it
 - `retries` - number of retry attempts for transient LLM failures
 
 ### Custom prompts
 
-The LLM system prompts used for normalization can be fully replaced by pointing
+The LLM system prompts used for summarization can be fully replaced by pointing
 to your own prompt files. This lets you fine-tune how responses are spoken.
 
 ```json
@@ -117,8 +117,8 @@ to your own prompt files. This lets you fine-tune how responses are spoken.
 
 If a path is not set, the built-in default prompt is used.
 
-Set `ttsNormalize` to `false` to skip TTS speech normalization by default. The
-`/tts-normalize` command can toggle it at runtime.
+Set `ttsSummarization` to `false` to skip TTS speech summarization by default.
+The `/tts-summarization` command can toggle it at runtime.
 
 ## Commands
 
@@ -128,25 +128,25 @@ The `leader` key in OpenCode is `ctrl+x`. So `leader+s` means press `ctrl+x`
 then `s`.
 
 The sidebar shows the current TTS phase. Click the TTS header to expand or
-collapse status details, auto mode, and normalization settings.
+collapse status details, auto mode, and summarization settings.
 
-| Command          | Keybind    | Description              |
-| ---------------- | ---------- | ------------------------ |
-| `/tts-speak`     | `leader+s` | Read last response aloud |
-| `/tts-auto`      | `leader+v` | Toggle auto TTS on/off   |
-| `/tts-stop`      | `escape`   | Stop playback            |
-| `/tts-normalize` |            | Toggle TTS normalization |
-| `/tts-voice`     |            | Select TTS voice         |
+| Command              | Keybind    | Description              |
+| -------------------- | ---------- | ------------------------ |
+| `/tts-speak`         | `leader+s` | Read last response aloud |
+| `/tts-auto`          | `leader+v` | Toggle auto TTS on/off   |
+| `/tts-stop`          | `escape`   | Stop playback            |
+| `/tts-summarization` |            | Toggle TTS summarization |
+| `/tts-voice`         |            | Select TTS voice         |
 
 ## How it works
 
 ### TTS pipeline
 
-1. When TTS normalization is enabled, the response text is sent to the LLM for
-   speech normalization
+1. When TTS summarization is enabled, the response text is sent to the LLM for
+   speech summarization
 2. The LLM decides how to handle it: narrate simple answers, summarize
    code-heavy responses, or briefly notify for confirmations
-3. When TTS normalization is disabled, the raw response text is spoken directly
+3. When TTS summarization is disabled, the raw response text is spoken directly
 4. MiMo synthesizes WAV audio, piped through sox for playback
 
 ### Auto TTS
